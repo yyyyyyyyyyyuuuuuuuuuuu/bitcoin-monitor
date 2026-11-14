@@ -7,10 +7,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const BINANCE =
-  "https://data-api.binance.vision/api/v3";
+const BINANCE = "https://data-api.binance.vision/api/v3";
 
-// Test that Render server is running
 app.get("/", (req, res) => {
   res.json({
     status: "ONLINE",
@@ -18,7 +16,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// Live Bitcoin price
+// LIVE BITCOIN PRICE
 app.get("/api/price", async (req, res) => {
   try {
     const response = await fetch(
@@ -44,12 +42,11 @@ app.get("/api/price", async (req, res) => {
   }
 });
 
-// Bitcoin candle data
+// BITCOIN CANDLE DATA
 app.get("/api/candles", async (req, res) => {
   try {
     const allowed = ["1m", "5m", "15m"];
-
-    const interval = req.query.interval || "15m";
+    const interval = req.query.interval || "1m";
 
     if (!allowed.includes(interval)) {
       return res.status(400).json({
@@ -67,20 +64,21 @@ app.get("/api/candles", async (req, res) => {
 
     const data = await response.json();
 
-    const candles = data
-      .filter(c => Number(c[6]) < Date.now())
-      .map(c => ({
-        time: Number(c[0]),
-        open: Number(c[1]),
-        high: Number(c[2]),
-        low: Number(c[3]),
-        close: Number(c[4]),
-        volume: Number(c[5])
-      }));
+    // INCLUDE THE CURRENTLY FORMING CANDLE
+    const candles = data.map(c => ({
+      time: Number(c[0]),
+      open: Number(c[1]),
+      high: Number(c[2]),
+      low: Number(c[3]),
+      close: Number(c[4]),
+      volume: Number(c[5]),
+      closed: Number(c[6]) < Date.now()
+    }));
 
     res.json({
       symbol: "BTCUSDT",
       interval,
+      timestamp: Date.now(),
       candles
     });
 
@@ -91,8 +89,9 @@ app.get("/api/candles", async (req, res) => {
   }
 });
 
+// START SERVER
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Bitcoin server running on ${PORT}`);
+  console.log(`Bitcoin server running on port ${PORT}`);
 });
